@@ -1,19 +1,53 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <div v-if="loading">
+      Аутентификация...
+    </div>
+    <div v-else-if="error">
+      {{ error.message }}
+    </div>
+    <div v-else>
+      <router-view />
+    </div>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import axios from 'axios';
+import { fetchProfile } from '@/api';
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
-  }
-}
+  data() {
+    return {
+      loading: false,
+      error: null,
+    };
+  },
+  components: {},
+  beforeMount() {
+    const accessToken = window.localStorage.getItem('accessToken');
+    if (accessToken) {
+      this.authenticate(accessToken);
+    }
+  },
+  methods: {
+    async authenticate(accessToken) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const authorizedUser = await fetchProfile(accessToken);
+        this.$store.commit('authenticate', authorizedUser);
+        axios.defaults.headers.authorization = `Bearer ${accessToken}`;
+      } catch (e) {
+        this.error = e;
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+};
 </script>
 
 <style>
